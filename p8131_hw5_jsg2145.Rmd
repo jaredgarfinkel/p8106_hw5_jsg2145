@@ -6,25 +6,60 @@ output: github_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+library(viridis)
+knitr::opts_chunk$set(
+	echo = TRUE,
+	warning = FALSE,
+	fig.width = 8, 
+  fig.height = 6,
+  out.width = "90%"
+)
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r}
+crab_df = read_table2("./data/HW5-crab.txt") %>% 
+  janitor::clean_names()
 ```
 
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r}
+M1 <- glm(sa ~ w, family = poisson(link = log), 
+                 data = crab_df)
+summary(M1)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+```{r}
+M2 <- glm(sa ~ w + wt, 
+          family = poisson(link = log), 
+          data = crab_df)
+summary(M2)
+```
+
+```{r}
+res.p2 = residuals(M2, type = "pearson", data = crab_df)
+G2 = sum(res.p2^2)
+pval = 1 - pchisq(G2, df = 170)
+phi = G2 / (170)
+phi
+M2$deviance/M2$df.residual
+
+summary(M2,
+        dispersion = phi)
+```
+
+```{r}
+plot(qnorm((173+1:173+0.5)/(2*173+1.125)),
+     sort(abs(res.p2)), 
+     xlab = 'Expected Half-Normal Order Stats',
+     ylab='Ordered Abs Pearson Residuals')
+abline(a=0, b=1)
+abline(a=0, b=sqrt(phi), lty=2)
+```
+
