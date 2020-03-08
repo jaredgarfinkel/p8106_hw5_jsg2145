@@ -208,4 +208,4 @@ The rate ratio of the intensity of parasites is `r coef(para.0)["count_year2000"
 
 The rate ratio of the intensity of parasites is `r coef(para.0)["count_year2001"] %>% exp() %>% round(digits = 3)` in the year 2001 compared to 1999 holding area and length constant.
 
-Fitting a model for zero inflation our parasites model shows that areas 2 and 3 are associated with higher intensity of parasites. On the other hand, higher length remains associated with lower intensity of parasites. So, fitting a model for zero inflation changed the association between area and intensity.
+Fitting a model for zero inflation our parasites model shows that areas 2 and 3 are associated with higher intensity of parasites than area 1. On the other hand, higher length remains associated with lower intensity of parasites. So, fitting a model for zero inflation changed the association between area and intensity.
