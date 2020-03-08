@@ -196,16 +196,16 @@ para.0 <- zeroinfl(intensity ~ area + year + length, data = para_df)
 summary(para.0)
 ```
 
-This model shows that the rate ratio of the intensity of parasites is `r coef(para.0)["zero_area2"] %>% exp() %>% round(digits = 3)` in area 2 compared to area 1 holding length and year constant.
+This model shows that the rate ratio of the intensity of parasites is `r coef(para.0)["count_area2"] %>% exp() %>% round(digits = 3)` in area 2 compared to area 1 holding length and year constant.
 
-The rate ratio of the intensity of parasites is `r coef(para.0)["zero_area3"] %>% exp() %>% round(digits = 3)` in area 3 compared to area 1 holding length and year constant.
+The rate ratio of the intensity of parasites is `r coef(para.0)["count_area3"] %>% exp() %>% round(digits = 3)` in area 3 compared to area 1 holding length and year constant.
 
-The rate ratio of the intensity of parasites is `r coef(para.0)["zero_area4"] %>% exp() %>% round(digits = 3)` in area 4 compared to area 1 holding length and year constant.
+The rate ratio of the intensity of parasites is `r coef(para.0)["count_area4"] %>% exp() %>% round(digits = 3)` in area 4 compared to area 1 holding length and year constant.
 
-The rate ratio of the intensity of parasites is `r coef(para.0)["zero_length"] %>% exp() %>% round(digits = 3)` for each unit increase in length holding area and year constant.
+The rate ratio of the intensity of parasites is `r coef(para.0)["count_length"] %>% exp() %>% round(digits = 3)` for each unit increase in length holding area and year constant.
 
-The rate ratio of the intensity of parasites is `r coef(para.0)["zero_year2000"] %>% exp() %>% round(digits = 3)` in the year 2000 compared to 1999 holding area and length constant.
+The rate ratio of the intensity of parasites is `r coef(para.0)["count_year2000"] %>% exp() %>% round(digits = 3)` in the year 2000 compared to 1999 holding area and length constant.
 
-The rate ratio of the intensity of parasites is `r coef(para.0)["zero_year2001"] %>% exp() %>% round(digits = 3)` in the year 2001 compared to 1999 holding area and length constant.
+The rate ratio of the intensity of parasites is `r coef(para.0)["count_year2001"] %>% exp() %>% round(digits = 3)` in the year 2001 compared to 1999 holding area and length constant.
 
-Fitting a model for zero inflation our parasites model shows that area 4 is associated with lower intensity of parasites, while areas 2 and 3 are associated with higher intensity. On the other hand, higher length remains associated with lower intensity of parasites. So, fitting a model for zero inflation changed the association between area and intensity.
+Fitting a model for zero inflation our parasites model shows that areas 2 and 3 are associated with higher intensity of parasites. On the other hand, higher length remains associated with lower intensity of parasites. So, fitting a model for zero inflation changed the association between area and intensity.
