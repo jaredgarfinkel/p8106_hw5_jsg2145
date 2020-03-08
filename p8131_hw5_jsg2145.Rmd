@@ -24,16 +24,51 @@ scale_fill_discrete = scale_fill_viridis_d
 theme_set(theme_minimal() + theme(legend.position = "bottom"))
 ```
 
+## Problem 1
+
 ```{r}
 crab_df = read_table2("./data/HW5-crab.txt") %>% 
   janitor::clean_names()
+
 ```
+
+This dataset is `r nrow(crab_df)` by `r ncol(crab_df)`. It gives information about female crabs like the average weight is `r mean(pull(crab_df, wt)) %>% round(digits = 2)`. Other variables like carapace width, color, and the condition of the spine. The response variable is the number of satellite male crabs around one's nest.
+
+```{r}
+crab_df %>% 
+  ggplot(aes(x = sa)) +
+  geom_histogram(binwidth = 1)
+```
+
 
 ```{r}
 M1 <- glm(sa ~ w, family = poisson(link = log), 
                  data = crab_df)
 summary(M1)
 ```
+
+
+The rate ratio of the number of satellite males around one's nest is `r coef(M1)["w"] %>% exp() %>%  round(digits = 2)`. This indicates that the number of satellites increases as the width of the female increases. Next, we check for over-dispersion.
+
+```{r}
+res.p1 = residuals(M1, type = "pearson", data = crab_df)
+G1 = sum(res.p1^2)
+pval = 1 - pchisq(G1, df = 170) # low p-value indicates a lack of fit
+phi1 = G1 / (170)
+phi1
+M1$deviance/M1$df.residual
+```
+
+```{r}
+plot(qnorm((173+1:173+0.5)/(2*173+1.125)),
+     sort(abs(res.p1)), 
+     xlab = 'Expected Half-Normal Order Stats',
+     ylab='Ordered Abs Pearson Residuals')
+abline(a=0, b=1)
+abline(a=0, b=sqrt(phi1), lty=2)
+```
+
+There appears to be overdispersion indicating the data may not follow the theoretical distribution.
 
 ```{r}
 M2 <- glm(sa ~ w + wt, 
@@ -42,16 +77,19 @@ M2 <- glm(sa ~ w + wt,
 summary(M2)
 ```
 
+
+A second model is proposed including the width of the carapace and the weight of the females. In this model, the rate ratio is `r coef(M2)["w"] %>% exp() %>% round(digits = 2)` with each unit increase in width holding the weight constant. The rate ratio for male satellites is `r coef(M2)["wt"] %>% exp() %>% round(digits = 2)` for each unit increase in weight holding width constant.
+
 ```{r}
 res.p2 = residuals(M2, type = "pearson", data = crab_df)
 G2 = sum(res.p2^2)
 pval = 1 - pchisq(G2, df = 170)
-phi = G2 / (170)
-phi
+phi2 = G2 / (170)
+phi2
 M2$deviance/M2$df.residual
 
 summary(M2,
-        dispersion = phi)
+        dispersion = phi2)
 ```
 
 ```{r}
@@ -60,6 +98,23 @@ plot(qnorm((173+1:173+0.5)/(2*173+1.125)),
      xlab = 'Expected Half-Normal Order Stats',
      ylab='Ordered Abs Pearson Residuals')
 abline(a=0, b=1)
-abline(a=0, b=sqrt(phi), lty=2)
+abline(a=0, b=sqrt(phi2), lty=2)
 ```
 
+This model also appears to show overdispersion. After adjusting for overdispersion, it appears the predictors become insignificant in the model. This indicates that the variance of the predictors may be due to something else, not association with the response variable.
+
+```{r}
+test.stat = M1$deviance - M2$deviance # deviance (from original model fitting)
+df = 171 - 170
+res.p = residuals(M2, type = "pearson")  
+res.p 
+G = sum(res.p^2) # calc dispersion param based on larger model
+phi = G / 170
+F.stat = test.stat / (df * phi)
+pval = 1 - pf(F.stat, df, 170)
+pval
+```
+
+A p-value above 0.05 (p = `r pval %>% round(digits = 3)`) means we do not reject the null, and therefore we accept the smaller model.
+
+## Problem 2
