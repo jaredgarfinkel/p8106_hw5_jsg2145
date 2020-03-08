@@ -8,6 +8,7 @@ output: github_document
 ```{r setup, include=FALSE}
 library(tidyverse)
 library(viridis)
+library(pscl)
 knitr::opts_chunk$set(
 	echo = TRUE,
 	warning = FALSE,
@@ -103,7 +104,7 @@ abline(a=0, b=sqrt(phi2), lty=2)
 
 This model also appears to show overdispersion. After adjusting for overdispersion, it appears the predictors become insignificant in the model. This indicates that the variance of the predictors may be due to something else, not association with the response variable.
 
-```{r}
+```{r, results = "hide"}
 test.stat = M1$deviance - M2$deviance # deviance (from original model fitting)
 df = 171 - 170
 res.p = residuals(M2, type = "pearson")  
@@ -111,10 +112,100 @@ res.p
 G = sum(res.p^2) # calc dispersion param based on larger model
 phi = G / 170
 F.stat = test.stat / (df * phi)
-pval = 1 - pf(F.stat, df, 170)
-pval
+pval.test1 = 1 - pf(F.stat, df, 170)
+pval.test1 # .113
 ```
 
 A p-value above 0.05 (p = `r pval %>% round(digits = 3)`) means we do not reject the null, and therefore we accept the smaller model.
 
 ## Problem 2
+
+```{r}
+para_df = read_table2("./data/HW5-parasite.txt") %>% 
+  janitor::clean_names() %>% 
+  drop_na(c(length, intensity)) %>%
+  select(sample, intensity, year, length, area) %>% 
+  mutate(year = factor(year),
+         area = factor(area))
+```
+
+After removing missing values in the variables of interest, this dataframe is `r nrow(para_df)` by `r ncol(para_df)`. It includes information about where the fish were caught (area), the sizes of the fish (length), and the year in which the fish were caught. The response variable is the intensity of parasites in each fish, which occur as follows:
+
+```{r}
+para_df %>% 
+  ggplot(aes(x = intensity)) +
+  geom_histogram(binwidth = 20)
+```
+
+
+```{r, results = "hide"}
+skimr::skim(para_df)
+
+para_df %>% 
+  distinct(year)
+
+
+
+```
+
+```{r}
+para.pois = glm(intensity ~ area + length + year, family = poisson(link = log), data = para_df)
+
+summary(para.pois)
+```
+
+This model shows that the rate ratio of the intensity of parasites is `r coef(para.pois)["area2"] %>% exp() %>% round(digits = 3)` in area 2 compared to area 1 holding length and year constant.
+
+The rate ratio of the intensity of parasites is `r coef(para.pois)["area3"] %>% exp() %>% round(digits = 3)` in area 3 compared to area 1 holding length and year constant.
+
+The rate ratio of the intensity of parasites is `r coef(para.pois)["area4"] %>% exp() %>% round(digits = 3)` in area 4 compared to area 1 holding length and year constant.
+
+The rate ratio of the intensity of parasites is `r coef(para.pois)["length"] %>% exp() %>% round(digits = 3)` for each unit increase in length holding area and year constant.
+
+The rate ratio of the intensity of parasites is `r coef(para.pois)["year2000"] %>% exp() %>% round(digits = 3)` in the year 2000 compared to 1999 holding area and length constant.
+
+The rate ratio of the intensity of parasites is `r coef(para.pois)["year2001"] %>% exp() %>% round(digits = 3)` in the year 2001 compared to 1999 holding area and length constant.
+
+So, area 4 is much more likely to have fish with higher intensity parasites, while larger fish are more likely to have lower intensity of parasites.
+
+```{r}
+res.para = residuals(para.pois, 
+                     type = "pearson",
+                     data = para_df)
+G.para = sum(res.para^2)
+pval = 1 - pchisq(G.para, df = 1184)
+phi.para = G.para / (1184)
+phi.para
+para.pois$deviance / para.pois$df.residual
+
+summary(para.pois, dispersion = phi.para)
+```
+```{r}
+plot(qnorm((1191 + 1:1191 + 0.5)/(2*1191 + 1.125)),
+     sort(abs(res.para)),
+     xlab = 'Expected Half-Normal Order Stats',
+     ylab = 'Ordered Abs Pearson Residuals')
+abline(a=0, b=1)
+abline(a=0, b = sqrt(phi.para), lty=2)
+```
+
+It appears that the residuals follow a parabolic curve indicating that there is a mismatch between the model and the observed values.
+
+```{r}
+para.0 <- zeroinfl(intensity ~ area + year + length, data = para_df)
+summary(para.0)
+```
+
+This model shows that the rate ratio of the intensity of parasites is `r coef(para.0)["zero_area2"] %>% exp() %>% round(digits = 3)` in area 2 compared to area 1 holding length and year constant.
+
+The rate ratio of the intensity of parasites is `r coef(para.0)["zero_area3"] %>% exp() %>% round(digits = 3)` in area 3 compared to area 1 holding length and year constant.
+
+The rate ratio of the intensity of parasites is `r coef(para.0)["zero_area4"] %>% exp() %>% round(digits = 3)` in area 4 compared to area 1 holding length and year constant.
+
+The rate ratio of the intensity of parasites is `r coef(para.0)["zero_length"] %>% exp() %>% round(digits = 3)` for each unit increase in length holding area and year constant.
+
+The rate ratio of the intensity of parasites is `r coef(para.0)["zero_year2000"] %>% exp() %>% round(digits = 3)` in the year 2000 compared to 1999 holding area and length constant.
+
+The rate ratio of the intensity of parasites is `r coef(para.0)["zero_year2001"] %>% exp() %>% round(digits = 3)` in the year 2001 compared to 1999 holding area and length constant.
+
+Fitting a model for zero inflation our parasites model shows that area 4 is associated with lower intensity of parasites, while areas 2 and 3 are associated with higher intensity. On the other hand, higher length remains associated with lower intensity of parasites. So, fitting a model for zero inflation changed the association between area and intensity.
